@@ -207,6 +207,27 @@ def test_design_run_result_new_preserves_validated_handoffs() -> None:
     assert result.requested_at.tzinfo is not None
 
 
+def test_design_run_rejects_recommendation_for_page_missing_from_plan() -> None:
+    plan = sample_plan()
+    recommendation = ComponentRecommendation(
+        page_ids=["ghost"],
+        recommended_sources=["Lucide"],
+        page_components=[
+            PageComponentRecommendation(page_id="ghost", components=["Card"], icons=[])
+        ],
+    )
+    with pytest.raises(ValidationError, match="PagePlan page ids"):
+        DesignRunResult.new(
+            "needs_revision",
+            ["planner:verified", "component_recommender:verified"],
+            plan,
+            recommendation,
+            None,
+            None,
+            None,
+        )
+
+
 def test_final_review_keeps_revision_reason() -> None:
     review = FinalReview(status="needs_revision", findings=["화면 수가 기획과 다릅니다."])
     assert review.status == "needs_revision"

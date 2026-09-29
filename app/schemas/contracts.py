@@ -163,6 +163,16 @@ class DesignRunResult(HandoffModel):
     build: FigmaBuildResult | None = None
     final: FinalReview | None = None
 
+    @model_validator(mode="after")
+    def validate_recommendation_matches_plan(self) -> "DesignRunResult":
+        if self.plan is not None and self.recommendation is not None:
+            plan_ids = {page.page_id for page in self.plan.pages}
+            recommendation_ids = set(self.recommendation.page_ids)
+            component_ids = {item.page_id for item in self.recommendation.page_components}
+            if recommendation_ids != plan_ids or component_ids != plan_ids:
+                raise ValueError("recommendation page ids must match PagePlan page ids")
+        return self
+
     @classmethod
     def new(
         cls,

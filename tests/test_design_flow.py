@@ -7,6 +7,7 @@ from app.agents.figma_builder import build_figma
 from app.agents.final_reviewer import final_review
 from app.agents.planner import create_page_plan
 from app.agents.ux_reviewer import review_usability
+from app.orchestration.design_flow import get_run, run_design_flow
 from app.schemas.contracts import (
     ComponentRecommendation,
     DesignRequest,
@@ -14,6 +15,8 @@ from app.schemas.contracts import (
     PageComponentRecommendation,
     PageDefinition,
     PagePlan,
+    UsabilityChecks,
+    UsabilityReview,
 )
 
 
@@ -222,3 +225,43 @@ def test_final_reviewer_preserves_failed_build_reason() -> None:
 
     assert result.status == "failed"
     assert any("figma_not_connected" in finding for finding in result.findings)
+
+
+def test_failed_usability_review_skips_figma_builder(monkeypatch: pytest.MonkeyPatch) -> None:
+    def failing_review(*_: object) -> UsabilityReview:
+        return UsabilityReview(
+            passed=False,
+            score=4,
+            findings=["보완이 필요합니다."],
+            checks=UsabilityChecks(),
+        )
+
+    monkeypatch.setattr(
+        "app.orchestration.design_flow.review_usability", failing_review
+    )
+
+    result = run_design_flow(sample_request(), mode="build_figma")
+
+    assert result.status == "needs_revision"
+    assert "ux_reviewer:needs_revision" in result.trace
+    assert "figma_builder:skipped" in result.trace
+    assert result.build is None
+
+
+def test_completed_plan_only_run_is_retrievable() -> None:
+    result = run_design_flow(sample_request(), mode="plan_only")
+
+    assert result.status == "completed"
+    assert result.build is not None
+    assert result.build.status == "skipped"
+    assert "figma_builder:skipped" in result.trace
+    assert get_run(result.run_id) == result
+
+
+def test_build_mode_preserves_missing_figma_connection_failure() -> None:
+    result = run_design_flow(sample_request(), mode="build_figma")
+
+    assert result.status == "failed"
+    assert result.build is not None
+    assert result.build.error_code == "figma_not_connected"
+    assert "figma_builder:failed" in result.trace

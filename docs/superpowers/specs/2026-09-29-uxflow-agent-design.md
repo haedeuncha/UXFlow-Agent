@@ -49,6 +49,8 @@ UXFlow Agent는 사용자의 웹서비스 요구를 받아, 필요한 프론트�
 사용자 요구사항
   → Planner Agent
   → Plan Contract Guard
+  → Component Recommender Agent
+  → Component Contract Guard
   → UX Reviewer Agent
   → Review Contract Guard
   ├─ 보완 필요: 개선 요청과 함께 Planner Agent 종료
@@ -80,6 +82,22 @@ UXFlow Agent는 사용자의 웹서비스 요구를 받아, 필요한 프론트�
 - 핵심 행동이 3회 이내 클릭으로 가능한지 평가한다.
 - 안내 문구, 오류 안내, 모바일 고려, 접근성, 완료 피드백을 점검한다.
 - 통과 또는 보완 필요를 근거와 함께 반환한다.
+
+### Component Recommender Agent
+
+책임:
+
+- 승인된 페이지 설계의 각 페이지에 필요한 UI 컴포넌트와 아이콘을 추천한다.
+- 재사용 컴포넌트와 페이지 전용 컴포넌트를 구분한다.
+- 컴포넌트의 접근성 요구와 사용 목적을 함께 반환한다.
+- React 기반 구현에는 shadcn/ui 또는 Radix UI, 아이콘에는 Lucide 또는 Heroicons처럼
+  검증된 소스만 추천한다.
+
+하지 않는 일:
+
+- 외부 사이트의 코드·SVG·이미지를 자동으로 복사하거나 다운로드하지 않는다.
+- 라이선스, 프로젝트 프레임워크, 디자인 규칙을 확인하지 않은 소스를 제안하지 않는다.
+- 사용자의 승인 없이 Figma 또는 소스 코드에 외부 자산을 추가하지 않는다.
 
 ### Figma Builder Agent
 
@@ -145,6 +163,31 @@ UXFlow Agent는 사용자의 웹서비스 요구를 받아, 필요한 프론트�
 - 페이지 ID는 중복될 수 없다.
 - 모든 페이지는 목적·핵심 행동·최소 하나의 UI 요소를 가져야 한다.
 
+### ComponentRecommendation
+
+```json
+{
+  "recommended_sources": ["shadcn/ui", "Lucide"],
+  "page_components": [
+    {
+      "page_id": "search",
+      "components": ["SearchInput", "FilterSheet", "ResultCard"],
+      "icons": ["Search", "SlidersHorizontal", "MapPin"],
+      "accessibility_notes": ["검색 입력에는 label을 제공한다"]
+    }
+  ],
+  "shared_components": ["Header", "PrimaryButton", "ErrorMessage"],
+  "license_review_required": true
+}
+```
+
+검증 규칙:
+
+- 모든 `page_id`는 PagePlan의 페이지 ID 안에 존재해야 한다.
+- 추천 소스는 사전에 허용한 소스 목록 안에 있어야 한다.
+- 모든 페이지는 컴포넌트 또는 아이콘, 혹은 둘 다를 최소 하나 이상 가져야 한다.
+- Figma나 코드 삽입 전에는 사용자 승인이 필요하다.
+
 ### UsabilityReview
 
 ```json
@@ -188,6 +231,7 @@ FastAPI Router는 `/api` 접두사를 사용한다.
 | Method | Path | 목적 |
 | --- | --- | --- |
 | POST | `/api/designs/plan` | 요구사항으로 PagePlan 생성 |
+| POST | `/api/designs/recommend-components` | PagePlan에 맞는 컴포넌트·아이콘 추천 |
 | POST | `/api/designs/review` | PagePlan UX 검수 |
 | POST | `/api/designs/build-figma` | 통과한 PagePlan Figma 생성 |
 | POST | `/api/designs/run` | 전체 순차 흐름 실행 |
@@ -195,8 +239,8 @@ FastAPI Router는 `/api` 접두사를 사용한다.
 | GET | `/api/contracts` | Agent 출력 계약 조회 |
 | GET | `/api/health` | 서비스 상태 확인 |
 
-`POST /api/designs/run`은 `DesignRequest`를 받고 Planner → Reviewer → Builder → Final
-Reviewer 순서로 실행한다. 어느 계약 검증이든 실패하면 이후 Agent를 실행하지 않고
+`POST /api/designs/run`은 `DesignRequest`를 받고 Planner → Component Recommender →
+Reviewer → Builder → Final Reviewer 순서로 실행한다. 어느 계약 검증이든 실패하면 이후 Agent를 실행하지 않고
 실패 단계와 원인을 Trace에 기록한다.
 
 ## 7. Figma 연동 원칙
@@ -235,6 +279,8 @@ Swagger 설명에 명시한다. 영구 보관은 후속 버전에서 PostgreSQL 
 - 페이지 수와 실제 페이지 목록 불일치 차단
 - 중복 페이지 ID 차단
 - 사용자 흐름에 없는 페이지 참조 차단
+- 페이지 목록에 없는 페이지에 컴포넌트를 추천하면 차단
+- 허용하지 않은 외부 소스를 추천하면 차단
 - UX 5점 조건 미충족 시 Figma Builder Skip
 - Figma 결과 화면 수 불일치 시 Final Review 실패
 - 정상 요청이 전체 순차 흐름을 완료
@@ -244,9 +290,10 @@ Swagger에서는 다음을 실행해 제출 증빙으로 캡처한다.
 1. `GET /api/health`
 2. `GET /api/contracts`
 3. `POST /api/designs/plan`
-4. `POST /api/designs/review`
-5. `POST /api/designs/run`의 정상·검수 실패 사례
-6. `GET /api/designs/{run_id}` Trace 조회
+4. `POST /api/designs/recommend-components`
+5. `POST /api/designs/review`
+6. `POST /api/designs/run`의 정상·검수 실패 사례
+7. `GET /api/designs/{run_id}` Trace 조회
 
 ## 11. 기술 선택
 

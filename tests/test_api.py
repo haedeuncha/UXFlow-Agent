@@ -53,6 +53,22 @@ def test_recommend_and_review_endpoints_return_valid_handoffs() -> None:
     assert response.json()["passed"] is True
 
 
+def test_review_rejects_recommendation_for_a_different_plan() -> None:
+    client = TestClient(app, raise_server_exceptions=False)
+    plan = client.post("/api/designs/plan", json=REQUEST).json()
+    recommendation = client.post("/api/designs/recommend-components", json=plan).json()
+    recommendation["page_ids"] = ["other", "other-complete"]
+    recommendation["page_components"][0]["page_id"] = "other"
+    recommendation["page_components"][1]["page_id"] = "other-complete"
+
+    response = client.post(
+        "/api/designs/review",
+        json={"plan": plan, "recommendation": recommendation},
+    )
+
+    assert response.status_code == 422
+
+
 def test_run_lookup_returns_trace() -> None:
     client = TestClient(app)
     run = client.post("/api/designs/run", json=REQUEST).json()

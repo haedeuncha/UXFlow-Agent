@@ -3,7 +3,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.agents.component_recommender import recommend_components
 from app.agents.planner import create_page_plan
@@ -28,6 +28,17 @@ class ReviewRequest(BaseModel):
 
     plan: PagePlan
     recommendation: ComponentRecommendation
+
+    @model_validator(mode="after")
+    def validate_recommendation_matches_plan(self) -> "ReviewRequest":
+        plan_ids = {page.page_id for page in self.plan.pages}
+        recommendation_ids = set(self.recommendation.page_ids)
+        component_ids = {
+            item.page_id for item in self.recommendation.page_components
+        }
+        if recommendation_ids != plan_ids or component_ids != plan_ids:
+            raise ValueError("recommendation page ids must match plan page ids")
+        return self
 
 
 @router.post("/designs/plan", response_model=PagePlan)

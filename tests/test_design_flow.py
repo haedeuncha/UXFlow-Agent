@@ -264,4 +264,4 @@ def test_build_mode_preserves_missing_figma_connection_failure() -> None:
     assert result.status == "failed"
     assert result.build is not None
     assert result.build.error_code == "figma_not_connected"
-    assert "figma_builder:failed" in result.trace
+    assert "figma_builder:failed:figma_not_connected" in result.trace

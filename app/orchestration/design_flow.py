@@ -91,10 +91,11 @@ def run_design_flow(request: DesignRequest, mode: FlowMode) -> DesignRunResult:
             recommendation,
             review,
         )
-    trace.append(f"figma_builder:{build.status}")
-
     if build.status == "failed":
+        error_suffix = f":{build.error_code}" if build.error_code else ""
+        trace.append(f"figma_builder:failed{error_suffix}")
         return _failed_result(trace, plan, recommendation, review, build)
+    trace.append(f"figma_builder:{build.status}")
     if build.status == "skipped":
         return save_run(
             DesignRunResult.new(

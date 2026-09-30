@@ -15,7 +15,7 @@ def review_usability(
     page_ids = {page.page_id for page in plan.pages}
     recommended_ids = {item.page_id for item in recommendation.page_components}
     if set(recommendation.page_ids) != page_ids or recommended_ids != page_ids:
-        raise ValueError("recommendation page ids must match plan page ids")
+        raise ValueError("추천 결과의 페이지 ID는 화면 계획의 페이지 ID와 같아야 합니다.")
 
     complete_pages = [page for page in plan.pages if page.page_id == "complete"]
     completion_feedback = bool(

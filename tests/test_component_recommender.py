@@ -84,7 +84,7 @@ def test_unknown_page_type_gets_safe_default_and_preserves_shared_components(
 
 
 def test_unknown_component_page_is_rejected() -> None:
-    with pytest.raises(ValidationError, match="unknown page"):
+    with pytest.raises(ValidationError, match="화면 계획에 없는 페이지"):
         ComponentRecommendation(
             page_ids=["search"],
             recommended_sources=["shadcn/ui", "Lucide"],

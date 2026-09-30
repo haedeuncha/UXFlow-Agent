@@ -26,7 +26,7 @@ def _required_ui(page_id: str, feature: str) -> list[str]:
 def create_page_plan(request: DesignRequest) -> PagePlan:
     """Create one page per feature and a final completion page."""
     if len(request.required_features) > 29:
-        raise ValueError("PagePlan supports at most 29 required features plus completion")
+        raise ValueError("필수 기능은 완료 화면을 제외하고 최대 29개까지 지원합니다.")
 
     pages: list[PageDefinition] = []
     used_ids = {"complete"}

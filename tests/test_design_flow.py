@@ -169,7 +169,7 @@ def test_reviewer_rejects_recommendations_for_a_different_plan() -> None:
         ],
     )
 
-    with pytest.raises(ValueError, match="recommendation page ids"):
+    with pytest.raises(ValueError, match="추천 결과의 페이지 ID"):
         review_usability(plan, unrelated)
 
 

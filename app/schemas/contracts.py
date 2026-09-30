@@ -41,11 +41,11 @@ class PagePlan(HandoffModel):
     def validate_plan(self) -> "PagePlan":
         ids = [page.page_id for page in self.pages]
         if self.page_count != len(self.pages):
-            raise ValueError("page_count must match pages length")
+            raise ValueError("페이지 수(page_count)는 pages 항목 수와 같아야 합니다.")
         if len(ids) != len(set(ids)):
-            raise ValueError("page_id values must be unique")
+            raise ValueError("페이지 ID(page_id)는 중복될 수 없습니다.")
         if missing := set(self.user_flow) - set(ids):
-            raise ValueError(f"user_flow contains unknown page ids: {sorted(missing)}")
+            raise ValueError(f"사용자 흐름에 없는 페이지 ID가 있습니다: {sorted(missing)}")
         return self
 
 
@@ -58,7 +58,7 @@ class PageComponentRecommendation(HandoffModel):
     @model_validator(mode="after")
     def validate_assets(self) -> "PageComponentRecommendation":
         if not self.components and not self.icons:
-            raise ValueError("page needs at least one component or icon")
+            raise ValueError("각 페이지에는 컴포넌트 또는 아이콘이 하나 이상 필요합니다.")
         return self
 
 
@@ -76,20 +76,20 @@ class ComponentRecommendation(HandoffModel):
     def validate_recommendation(self) -> "ComponentRecommendation":
         unknown_pages = {item.page_id for item in self.page_components} - set(self.page_ids)
         if unknown_pages:
-            raise ValueError(f"recommendation references unknown page ids: {sorted(unknown_pages)}")
+            raise ValueError(f"추천 결과에 화면 계획에 없는 페이지 ID가 있습니다: {sorted(unknown_pages)}")
         if not self.page_ids:
-            raise ValueError("page_ids must identify the PagePlan pages")
+            raise ValueError("page_ids에는 화면 계획의 페이지 ID를 지정해야 합니다.")
         if len(self.page_ids) != len(set(self.page_ids)):
-            raise ValueError("page_ids must be unique")
+            raise ValueError("page_ids는 중복될 수 없습니다.")
         recommended_ids = [item.page_id for item in self.page_components]
         if len(recommended_ids) != len(set(recommended_ids)):
-            raise ValueError("page_components must have unique page ids")
+            raise ValueError("page_components의 페이지 ID는 중복될 수 없습니다.")
         if missing_pages := set(self.page_ids) - set(recommended_ids):
-            raise ValueError(f"recommendation is missing page ids: {sorted(missing_pages)}")
+            raise ValueError(f"추천 결과에 누락된 페이지 ID가 있습니다: {sorted(missing_pages)}")
         if not self.recommended_sources:
-            raise ValueError("recommended_sources must not be empty")
+            raise ValueError("추천 소스(recommended_sources)는 비어 있을 수 없습니다.")
         if unknown_sources := set(self.recommended_sources) - ALLOWED_RECOMMENDATION_SOURCES:
-            raise ValueError(f"unapproved recommendation source: {sorted(unknown_sources)}")
+            raise ValueError(f"허용되지 않은 추천 소스가 있습니다: {sorted(unknown_sources)}")
         return self
 
 
@@ -113,9 +113,9 @@ class UsabilityReview(HandoffModel):
         if self.passed and (
             self.score != 5 or not all(self.checks.model_dump().values()) or self.findings
         ):
-            raise ValueError("five-star review requires all checks and no findings")
+            raise ValueError("5점 통과는 모든 UX 점검 항목이 통과하고 개선 사항이 없어야 합니다.")
         if not self.passed and not self.findings:
-            raise ValueError("failed review requires an actionable finding")
+            raise ValueError("검수 실패 결과에는 실행 가능한 개선 사항이 하나 이상 필요합니다.")
         return self
 
 
@@ -131,16 +131,16 @@ class FigmaBuildResult(HandoffModel):
     def validate_build(self) -> "FigmaBuildResult":
         if self.status == "completed":
             if not self.figma_url:
-                raise ValueError("completed result requires figma_url")
+                raise ValueError("완료된 Figma 결과에는 figma_url이 필요합니다.")
             if self.created_screen_count == 0:
-                raise ValueError("completed result requires created_screen_count above zero")
+                raise ValueError("완료된 Figma 결과의 생성 화면 수는 1개 이상이어야 합니다.")
             if self.created_screen_count != len(self.created_page_ids):
-                raise ValueError("created_screen_count must match created_page_ids")
+                raise ValueError("생성 화면 수는 생성된 페이지 ID 수와 같아야 합니다.")
         elif self.status == "skipped":
             if self.figma_url or self.created_screen_count or self.created_page_ids:
-                raise ValueError("skipped result cannot claim Figma output")
+                raise ValueError("건너뛴 Figma 결과에는 생성 결과를 포함할 수 없습니다.")
         elif not self.error_code and not self.error:
-            raise ValueError("failed result requires an error_code or error")
+            raise ValueError("실패한 Figma 결과에는 error_code 또는 error가 필요합니다.")
         return self
 
 
@@ -170,7 +170,7 @@ class DesignRunResult(HandoffModel):
             recommendation_ids = set(self.recommendation.page_ids)
             component_ids = {item.page_id for item in self.recommendation.page_components}
             if recommendation_ids != plan_ids or component_ids != plan_ids:
-                raise ValueError("recommendation page ids must match PagePlan page ids")
+                raise ValueError("추천 결과의 페이지 ID는 화면 계획의 페이지 ID와 같아야 합니다.")
         return self
 
     @classmethod

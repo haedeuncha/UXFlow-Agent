@@ -13,4 +13,4 @@ def build_figma(
         return FigmaBuildResult(status="skipped")
     if mode == "build_figma":
         return FigmaBuildResult(status="failed", error_code="figma_not_connected")
-    raise ValueError(f"Unsupported Figma mode: {mode}")
+    raise ValueError(f"지원하지 않는 Figma 실행 모드입니다: {mode}")

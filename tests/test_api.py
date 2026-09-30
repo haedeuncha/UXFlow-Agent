@@ -17,6 +17,14 @@ def test_health_returns_service_name() -> None:
     assert response.json() == {"status": "ok", "service": "UXFlow Agent"}
 
 
+def test_swagger_openapi_uses_korean_service_and_endpoint_descriptions() -> None:
+    schema = TestClient(app).get("/openapi.json").json()
+
+    assert schema["info"]["title"] == "UXFlow Agent API"
+    assert "한국어" in schema["info"]["description"]
+    assert schema["paths"]["/api/designs/plan"]["post"]["summary"] == "화면 계획 생성"
+
+
 def test_plan_endpoint_returns_page_count() -> None:
     response = TestClient(app).post("/api/designs/plan", json=REQUEST)
 

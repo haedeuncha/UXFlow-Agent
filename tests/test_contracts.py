@@ -36,7 +36,7 @@ def sample_plan() -> PagePlan:
 
 
 def test_page_count_must_match_page_list() -> None:
-    with pytest.raises(ValidationError, match="page_count"):
+    with pytest.raises(ValidationError, match="페이지 수"):
         PagePlan(
             project_name="예약 서비스",
             page_count=2,
@@ -55,7 +55,7 @@ def test_page_count_must_match_page_list() -> None:
 
 
 def test_five_star_review_requires_every_check() -> None:
-    with pytest.raises(ValidationError, match="five-star"):
+    with pytest.raises(ValidationError, match="5점 통과"):
         UsabilityReview(
             passed=True,
             score=5,
@@ -65,7 +65,7 @@ def test_five_star_review_requires_every_check() -> None:
 
 
 def test_duplicate_page_ids_are_rejected() -> None:
-    with pytest.raises(ValidationError, match="page_id values must be unique"):
+    with pytest.raises(ValidationError, match="페이지 ID"):
         PagePlan(
             project_name="X",
             page_count=2,
@@ -76,7 +76,7 @@ def test_duplicate_page_ids_are_rejected() -> None:
 
 
 def test_unknown_user_flow_page_is_rejected() -> None:
-    with pytest.raises(ValidationError, match="unknown page ids"):
+    with pytest.raises(ValidationError, match="사용자 흐름에 없는 페이지"):
         PagePlan(
             project_name="X",
             page_count=1,
@@ -106,7 +106,7 @@ def test_request_requires_a_goal_and_feature() -> None:
 
 
 def test_recommendation_rejects_unknown_page() -> None:
-    with pytest.raises(ValidationError, match="unknown page"):
+    with pytest.raises(ValidationError, match="화면 계획에 없는 페이지"):
         ComponentRecommendation(
             page_ids=["home"],
             recommended_sources=["Lucide"],
@@ -116,7 +116,7 @@ def test_recommendation_rejects_unknown_page() -> None:
 
 
 def test_recommendation_rejects_unapproved_source() -> None:
-    with pytest.raises(ValidationError, match="source"):
+    with pytest.raises(ValidationError, match="허용되지 않은 추천 소스"):
         ComponentRecommendation(
             page_ids=["home"],
             recommended_sources=["Unknown UI Kit"],
@@ -126,7 +126,7 @@ def test_recommendation_rejects_unapproved_source() -> None:
 
 
 def test_recommendation_covers_every_planned_page() -> None:
-    with pytest.raises(ValidationError, match="missing page"):
+    with pytest.raises(ValidationError, match="누락된 페이지"):
         ComponentRecommendation(
             page_ids=["home", "complete"],
             recommended_sources=["Lucide"],
@@ -136,17 +136,17 @@ def test_recommendation_covers_every_planned_page() -> None:
 
 
 def test_page_recommendation_needs_component_or_icon() -> None:
-    with pytest.raises(ValidationError, match="component or icon"):
+    with pytest.raises(ValidationError, match="컴포넌트 또는 아이콘"):
         PageComponentRecommendation(page_id="home", components=[], icons=[])
 
 
 def test_failed_review_requires_actionable_finding() -> None:
-    with pytest.raises(ValidationError, match="finding"):
+    with pytest.raises(ValidationError, match="실행 가능한 개선 사항"):
         UsabilityReview(passed=False, score=3, findings=[], checks=UsabilityChecks())
 
 
 def test_five_star_review_rejects_findings() -> None:
-    with pytest.raises(ValidationError, match="five-star"):
+    with pytest.raises(ValidationError, match="5점 통과"):
         UsabilityReview(
             passed=True,
             score=5,
@@ -165,7 +165,7 @@ def test_five_star_review_rejects_findings() -> None:
 def test_completed_figma_result_needs_real_url_and_matching_pages() -> None:
     with pytest.raises(ValidationError, match="figma_url"):
         FigmaBuildResult(status="completed", created_screen_count=1, created_page_ids=["home"])
-    with pytest.raises(ValidationError, match="created_screen_count"):
+    with pytest.raises(ValidationError, match="생성 화면 수"):
         FigmaBuildResult(
             status="completed",
             figma_url="https://www.figma.com/design/abc",
@@ -175,7 +175,7 @@ def test_completed_figma_result_needs_real_url_and_matching_pages() -> None:
 
 
 def test_completed_figma_result_requires_a_screen() -> None:
-    with pytest.raises(ValidationError, match="created_screen_count"):
+    with pytest.raises(ValidationError, match="생성 화면 수"):
         FigmaBuildResult(status="completed", figma_url="https://www.figma.com/design/abc")
 
 
@@ -216,7 +216,7 @@ def test_design_run_rejects_recommendation_for_page_missing_from_plan() -> None:
             PageComponentRecommendation(page_id="ghost", components=["Card"], icons=[])
         ],
     )
-    with pytest.raises(ValidationError, match="PagePlan page ids"):
+    with pytest.raises(ValidationError, match="추천 결과의 페이지 ID"):
         DesignRunResult.new(
             "needs_revision",
             ["planner:verified", "component_recommender:verified"],

@@ -8,6 +8,7 @@ from pydantic import BaseModel, model_validator
 from app.agents.component_recommender import recommend_components
 from app.agents.planner import create_page_plan
 from app.agents.ux_reviewer import review_usability
+from app.config import figma_token_configured
 from app.orchestration.design_flow import get_run, run_design_flow
 from app.schemas.contracts import (
     ComponentRecommendation,
@@ -21,6 +22,12 @@ from app.schemas.contracts import (
 
 
 router = APIRouter(prefix="/api", tags=["UXFlow Agent"])
+
+
+@router.get("/figma/status")
+def get_figma_status() -> dict[str, bool]:
+    """Confirm local configuration without exposing a personal access token."""
+    return {"configured": figma_token_configured()}
 
 
 class ReviewRequest(BaseModel):

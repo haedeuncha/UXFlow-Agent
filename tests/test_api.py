@@ -39,6 +39,18 @@ def test_contracts_endpoint_lists_page_plan() -> None:
     assert "PagePlan" in response.json()
 
 
+def test_figma_status_only_reports_whether_a_token_is_configured(
+    monkeypatch,
+) -> None:
+    """The API must never include the secret itself in its response."""
+    monkeypatch.setattr("app.routers.designs.figma_token_configured", lambda: True)
+
+    response = TestClient(app).get("/api/figma/status")
+
+    assert response.status_code == 200
+    assert response.json() == {"configured": True}
+
+
 def test_recommend_and_review_endpoints_return_valid_handoffs() -> None:
     client = TestClient(app)
     plan = client.post("/api/designs/plan", json=REQUEST).json()
